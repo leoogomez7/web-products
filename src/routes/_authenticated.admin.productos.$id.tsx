@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { ArrowLeft, ImagePlus, Loader2, Save, Trash2, X } from "lucide-react";
-import { useCategories, useProduct, productsQuery, productQuery } from "@/lib/catalog";
+import { useCategories, productsQuery, productQuery } from "@/lib/catalog";
 import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { uploadProductImage, deleteProductImageByUrl } from "@/lib/storage";
 
@@ -21,13 +21,21 @@ const GRADIENTS = [
 ];
 
 export const Route = createFileRoute("/_authenticated/admin/productos/$id")({
-  component: ProductEdit,
+  component: ProductEditRoute,
 });
 
-function ProductEdit() {
+function ProductEditRoute() {
   const { id } = Route.useParams();
+  return <ProductEdit id={id} />;
+}
+
+export function ProductEdit({ id }: { id: string }) {
   const mode: Mode = id === "nuevo" ? "create" : "edit";
-  const { data: existing, isLoading: loadingProduct } = useProduct(mode === "edit" ? id : "");
+  const existingQuery = useQuery({
+    ...productQuery(id),
+    enabled: mode === "edit",
+  });
+  const { data: existing, isLoading: loadingProduct } = existingQuery;
   const { data: categories = [] } = useCategories();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -102,7 +110,7 @@ function ProductEdit() {
       queryClient.invalidateQueries({ queryKey: productsQuery().queryKey.slice(0, 1) });
       queryClient.invalidateQueries({ queryKey: productQuery(id).queryKey });
       toast.success("Guardado");
-      navigate({ to: "/admin/productos" });
+      navigate({ to: "/admin/productos", replace: true });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Error al guardar"),
   });
@@ -214,7 +222,7 @@ function ProductEdit() {
                 const f = e.dataTransfer.files?.[0];
                 if (f) handleFile(f);
               }}
-              className={`relative aspect-square rounded-2xl overflow-hidden border border-dashed border-border bg-gradient-to-br ${form.gradient}`}
+              className={`relative aspect-square rounded-2xl overflow-hidden border border-dashed border-border .bg-linear-to-br ${form.gradient}`}
             >
               {form.image_url ? (
                 <img src={form.image_url} className="absolute inset-0 h-full w-full object-cover" />
@@ -279,7 +287,7 @@ function ProductEdit() {
                     key={g}
                     type="button"
                     onClick={() => setForm((f) => ({ ...f, gradient: g }))}
-                    className={`h-10 rounded-lg bg-gradient-to-br ${g} ring-2 transition ${form.gradient === g ? "ring-white" : "ring-transparent"}`}
+                    className={`h-10 rounded-lg bg-linear-to-br ${g} ring-2 transition ${form.gradient === g ? "ring-white" : "ring-transparent"}`}
                   />
                 ))}
               </div>
@@ -354,7 +362,7 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
     >
       <span className="text-sm">{label}</span>
       <span className={`relative h-5 w-9 rounded-full transition ${value ? "bg-emerald-400" : "bg-white/10"}`}>
-        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition ${value ? "left-[18px]" : "left-0.5"}`} />
+        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition ${value ? "left-4.5" : "left-0.5"}`} />
       </span>
     </button>
   );

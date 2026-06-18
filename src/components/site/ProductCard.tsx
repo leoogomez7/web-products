@@ -18,7 +18,7 @@ export function ProductCard({ product, highlight }: { product: Product; highligh
       className="card-spot group relative overflow-hidden rounded-2xl glass shadow-card transition-all duration-300 hover:-translate-y-1 hover:border-white/15"
     >
       {/* Visual */}
-      <div className="relative aspect-[5/4] overflow-hidden">
+      <div className="relative aspect-5/4 overflow-hidden">
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
@@ -28,7 +28,7 @@ export function ProductCard({ product, highlight }: { product: Product; highligh
           />
         ) : (
           <>
-            <div className={`absolute inset-0 bg-gradient-to-br ${product.gradient} opacity-90 transition-transform duration-700 group-hover:scale-110`} />
+            <div className={`absolute inset-0 bg-linear-to-br ${product.gradient} opacity-90 transition-transform duration-700 group-hover:scale-110`} />
             <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_20%_0%,rgba(255,255,255,0.35),transparent_55%)] mix-blend-overlay" />
             <div className="absolute inset-0 grid place-items-center">
               <span className="text-6xl font-bold tracking-tight text-white/95 drop-shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-transform duration-500 group-hover:scale-105">
@@ -47,10 +47,18 @@ export function ProductCard({ product, highlight }: { product: Product; highligh
       </div>
 
       {/* Body */}
-      <div className="relative p-5 z-[2]">
+      <div className="relative p-5 z-2">
         <h3 className="text-base font-semibold tracking-tight">
           <Highlight text={product.title} term={highlight} />
         </h3>
+        {product.price != null ? (
+          <div className="mt-1 text-sm font-semibold text-foreground">
+            {new Intl.NumberFormat("es-AR", {
+              style: "currency",
+              currency: product.currency ?? "ARS",
+            }).format(product.price)}
+          </div>
+        ) : null}
         <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
           <Highlight text={product.description} term={highlight} />
         </p>

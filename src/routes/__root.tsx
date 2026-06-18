@@ -122,7 +122,7 @@ function KindeClientProvider({ children }: { children: ReactNode }) {
   const [redirectUri, setRedirectUri] = useState("");
 
   useEffect(() => {
-    setRedirectUri(`${window.location.origin}/admin`);
+    setRedirectUri(`${window.location.origin}/admin/`);
   }, []);
 
   if (!redirectUri) {

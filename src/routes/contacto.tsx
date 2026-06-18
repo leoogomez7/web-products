@@ -68,7 +68,7 @@ function Contacto() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   El administrador debe configurar el número de WhatsApp desde el panel.
                 </p>
-                <Link to="/admin" className="mt-4 inline-flex items-center h-9 px-4 rounded-full bg-white text-black text-xs font-medium hover:bg-white/90">
+                <Link to="/admin/" className="mt-4 inline-flex items-center h-9 px-4 rounded-full bg-white text-black text-xs font-medium hover:bg-white/90">
                   Ir al panel
                 </Link>
               </div>

@@ -13,8 +13,8 @@ export const Route = createFileRoute("/_authenticated/admin")({
 });
 
 const items: { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean }[] = [
-  { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/admin/productos", label: "Productos", icon: Package },
+  { to: "/admin/", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/productos/", label: "Productos", icon: Package },
   { to: "/admin/categorias", label: "Categorías", icon: FolderTree },
   { to: "/admin/ajustes", label: "Ajustes", icon: Settings },
 ];
@@ -23,19 +23,28 @@ function AdminLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { logout } = useKindeAuth();
+  const { logout, login, isAuthenticated } = useKindeAuth();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const masterPassword = import.meta.env.VITE_MASTER_PASSWORD;
 
+  const isTestMode = isUnlocked && !isAuthenticated;
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const stored = sessionStorage.getItem("admin_password_verified");
-    if (stored === "true") {
+    const unlocked = stored === "true";
+    if (unlocked) {
+      setIsUnlocked(true);
+      return;
+    }
+
+    if (isAuthenticated) {
+      sessionStorage.setItem("admin_password_verified", "true");
       setIsUnlocked(true);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const handlePasswordSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -122,16 +131,31 @@ function AdminLayout() {
         {/* Sidebar */}
         <aside className="lg:sticky lg:top-24 h-fit">
           <div className="rounded-2xl glass p-3">
-            <div className="px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Panel
+            <div className="flex items-center justify-between px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              <span>Panel</span>
+              {isAuthenticated ? (
+                <span className="text-[10px] text-rose-300">Cerrar sesión</span>
+              ) : null}
             </div>
             <nav className="mt-1 space-y-0.5">
               {items.map((it) => {
                 const active = it.exact ? pathname === it.to : pathname.startsWith(it.to);
                 return (
-                  <Link
+                  <button
                     key={it.to}
-                    to={it.to as "/admin"}
+                    type="button"
+                    onClick={async () => {
+                      if (!isAuthenticated && !isTestMode) {
+                        await login({
+                          redirectURL: `${window.location.origin}${it.to}`,
+                          scope: ["openid", "profile", "email"],
+                          prompt: "login",
+                        });
+                        return;
+                      }
+
+                      navigate({ to: it.to, replace: true });
+                    }}
                     className={[
                       "flex items-center gap-2.5 px-3 h-9 rounded-xl text-sm transition-colors",
                       active
@@ -141,17 +165,18 @@ function AdminLayout() {
                   >
                     <it.icon className="h-4 w-4" />
                     {it.label}
-                  </Link>
+                  </button>
                 );
               })}
             </nav>
             <div className="mt-3 border-t border-border pt-3 space-y-0.5">
-              <Link
-                to="/"
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/", replace: true })}
                 className="flex items-center gap-2.5 px-3 h-9 rounded-xl text-sm text-muted-foreground hover:text-foreground hover:bg-white/5"
               >
                 <ExternalLink className="h-4 w-4" /> Ver sitio
-              </Link>
+              </button>
               <button
                 onClick={handleSignOut}
                 className="w-full flex items-center gap-2.5 px-3 h-9 rounded-xl text-sm text-muted-foreground hover:text-rose-300 hover:bg-rose-500/10 transition-colors"

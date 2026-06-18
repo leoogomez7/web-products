@@ -8,17 +8,13 @@ export function CategoryChips({
   onChange: (v: string | null) => void;
 }) {
   const { data: categories = [] } = useCategories();
-  const all = [
-    { id: null as string | null, name: "Todos" },
-    ...categories.map((c) => ({ id: c.id, name: c.name })),
-  ];
   return (
     <div className="flex flex-wrap gap-2">
-      {all.map((c) => {
+      {categories.map((c) => {
         const active = value === c.id;
         return (
           <button
-            key={c.id ?? "all"}
+            key={c.id}
             onClick={() => onChange(c.id)}
             className={[
               "relative h-9 px-4 rounded-full text-xs font-medium transition-all duration-300",

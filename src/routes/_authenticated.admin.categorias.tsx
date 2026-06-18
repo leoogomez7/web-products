@@ -48,6 +48,25 @@ function CategoriesAdmin() {
     onError: (e) => toast.error(e instanceof Error ? e.message : "No se puede eliminar (tiene productos)"),
   });
 
+  const sampleCategories = [
+    {
+      id: "sample-category-1",
+      name: "Categoría de prueba 1",
+      description: "Categoría de ejemplo para mostrar cómo se ve la lista.",
+      gradient: GRADIENTS[0],
+      sortOrder: 0,
+    },
+    {
+      id: "sample-category-2",
+      name: "Categoría de prueba 2",
+      description: "Otra categoría de ejemplo para mostrar el formato.",
+      gradient: GRADIENTS[1],
+      sortOrder: 0,
+    },
+  ];
+  const showSampleCategories = categories.length === 0;
+  const displayCategories = showSampleCategories ? sampleCategories : categories;
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -69,14 +88,15 @@ function CategoriesAdmin() {
         <div className="py-12 flex justify-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {categories.map((c) => (
+          {displayCategories.map((c) => (
             <CategoryRow
               key={c.id}
               category={c}
-              count={products.filter((p) => p.categoryId === c.id).length}
+              count={showSampleCategories ? 2 : products.filter((p) => p.categoryId === c.id).length}
               onSave={(payload) => update.mutate(payload)}
               onDelete={() => remove.mutate(c.id)}
               gradients={GRADIENTS}
+              disabled={showSampleCategories}
             />
           ))}
         </div>
@@ -86,13 +106,14 @@ function CategoriesAdmin() {
 }
 
 function CategoryRow({
-  category, count, onSave, onDelete, gradients,
+  category, count, onSave, onDelete, gradients, disabled,
 }: {
   category: { id: string; name: string; description: string; gradient: string; sortOrder: number };
   count: number;
   onSave: (p: { id: string; name: string; description: string; gradient: string; sort_order: number }) => void;
   onDelete: () => void;
   gradients: string[];
+  disabled?: boolean;
 }) {
   const [name, setName] = useState(category.name);
   const [description, setDescription] = useState(category.description);
@@ -101,20 +122,34 @@ function CategoryRow({
 
   return (
     <div className="rounded-2xl glass overflow-hidden">
-      <div className={`h-20 bg-gradient-to-br ${gradient}`} />
+      <div className={`h-20 bg-linear-to-br ${gradient}`} />
       <div className="p-5 space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{category.id} · {count} producto{count === 1 ? "" : "s"}</div>
         </div>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre" />
-        <textarea rows={2} className="input resize-none" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Descripción" />
+        <input
+          className="input"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Nombre"
+          readOnly={disabled}
+        />
+        <textarea
+          rows={2}
+          className="input resize-none"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Descripción"
+          readOnly={disabled}
+        />
         <div className="grid grid-cols-6 gap-1.5">
           {gradients.map((g) => (
             <button
               key={g}
               type="button"
               onClick={() => setGradient(g)}
-              className={`h-7 rounded-md bg-gradient-to-br ${g} ring-2 transition ${gradient === g ? "ring-white" : "ring-transparent"}`}
+              disabled={disabled}
+              className={`h-7 rounded-md .bg-linear-to-br ${g} ring-2 transition ${gradient === g ? "ring-white" : "ring-transparent"} ${disabled ? "opacity-40 pointer-events-none" : ""}`}
             />
           ))}
         </div>
@@ -124,19 +159,25 @@ function CategoryRow({
             className="input w-24"
             value={sortOrder}
             onChange={(e) => setSortOrder(Number(e.target.value))}
+            readOnly={disabled}
           />
           <button
             onClick={() => onSave({ id: category.id, name, description, gradient, sort_order: sortOrder })}
-            className="ml-auto inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-white text-black text-xs font-medium hover:bg-white/90"
+            disabled={disabled}
+            className={`ml-auto inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-white text-black text-xs font-medium hover:bg-white/90 ${disabled ? "opacity-60 pointer-events-none" : ""}`}
           >
-            <Save className="h-3.5 w-3.5" /> Guardar
+            <Save className="h-3.5 w-3.5" /> {disabled ? "Ejemplo" : "Guardar"}
           </button>
-          <button
-            onClick={() => { if (count === 0 && confirm(`¿Eliminar "${category.name}"?`)) onDelete(); else if (count > 0) toast.error("Mueve los productos primero"); }}
-            className="h-9 w-9 grid place-items-center rounded-full hover:bg-rose-500/10 text-muted-foreground hover:text-rose-300"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+          {disabled ? (
+            <span className="text-xs text-muted-foreground">Solo lectura</span>
+          ) : (
+            <button
+              onClick={() => { if (count === 0 && confirm(`¿Eliminar "${category.name}"?`)) onDelete(); else if (count > 0) toast.error("Mueve los productos primero"); }}
+              className="h-9 w-9 grid place-items-center rounded-full hover:bg-rose-500/10 text-muted-foreground hover:text-rose-300"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -150,20 +191,32 @@ function CategoryRow({
 }
 
 function NewCategoryCard({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
-  const [id, setId] = useState("");
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [gradient, setGradient] = useState(GRADIENTS[0]);
   const [saving, setSaving] = useState(false);
 
+  const createSlug = (value: string) =>
+    value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9-]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+
   const save = async () => {
-    if (!id.trim() || !name.trim()) return toast.error("ID y nombre son obligatorios");
+    if (!name.trim()) return toast.error("El nombre de la categoría es obligatorio");
     setSaving(true);
+    const slug = createSlug(name);
+    if (!slug) {
+      setSaving(false);
+      return toast.error("El nombre debe contener al menos una letra o número");
+    }
+
     const { error } = await supabase.from("categories").insert({
-      id: id.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-      slug: id.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+      id: slug,
+      slug,
       name,
-      description,
+      description: "",
       gradient,
     });
     setSaving(false);
@@ -177,14 +230,12 @@ function NewCategoryCard({ onClose, onSaved }: { onClose: () => void; onSaved: (
     <div className="rounded-2xl glass-strong p-5 space-y-3 relative">
       <button onClick={onClose} className="absolute top-3 right-3 h-7 w-7 grid place-items-center rounded-full hover:bg-white/10"><X className="h-3.5 w-3.5" /></button>
       <div className="text-sm font-semibold">Nueva categoría</div>
-      <div className="grid sm:grid-cols-2 gap-3">
-        <input className="input" placeholder="ID (slug)" value={id} onChange={(e) => setId(e.target.value)} />
-        <input className="input" placeholder="Nombre" value={name} onChange={(e) => setName(e.target.value)} />
+      <div className="space-y-3">
+        <input className="input" placeholder="Nombre de la categoría" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
-      <textarea className="input resize-none" rows={2} placeholder="Descripción" value={description} onChange={(e) => setDescription(e.target.value)} />
       <div className="grid grid-cols-6 gap-1.5">
         {GRADIENTS.map((g) => (
-          <button key={g} type="button" onClick={() => setGradient(g)} className={`h-7 rounded-md bg-gradient-to-br ${g} ring-2 transition ${gradient === g ? "ring-white" : "ring-transparent"}`} />
+          <button key={g} type="button" onClick={() => setGradient(g)} className={`h-7 rounded-md bg-linear-to-br ${g} ring-2 transition ${gradient === g ? "ring-white" : "ring-transparent"}`} />
         ))}
       </div>
       <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 h-10 px-5 rounded-full bg-white text-black text-sm font-medium hover:bg-white/90 disabled:opacity-60">

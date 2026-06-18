@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Search, X, SlidersHorizontal, Loader2 } from "lucide-react";
+import { Search, X, Loader2 } from "lucide-react";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useCategories, useProducts } from "@/lib/catalog";
+import { sampleCategories, sampleProducts, useCategories, useProducts } from "@/lib/catalog";
 import { ProductCard } from "@/components/site/ProductCard";
 import { CategoryChips } from "@/components/site/CategoryChips";
 
@@ -50,21 +50,42 @@ function Catalog() {
     return () => clearTimeout(t);
   }, [query, cat, navigate]);
 
+  const categoriesForFilter = categories.length > 0 ? categories : sampleCategories;
+  const sourceProducts = products.length === 0 ? sampleProducts : products;
+  const [order, setOrder] = useState<"none" | "price-asc" | "price-desc" | "title-asc" | "title-desc">("none");
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return products.filter((p) => {
+
+    return sourceProducts.filter((p) => {
       if (cat) {
-        const c = categories.find((c) => c.slug === cat || c.id === cat);
+        const c = categoriesForFilter.find((c) => c.slug === cat || c.id === cat);
         if (!c || p.categoryId !== c.id) return false;
       }
       if (!q) return true;
       return (
         p.title.toLowerCase().includes(q) ||
         p.description.toLowerCase().includes(q) ||
-        (categories.find((c) => c.id === p.categoryId)?.name.toLowerCase().includes(q) ?? false)
+        (categoriesForFilter.find((c) => c.id === p.categoryId)?.name.toLowerCase().includes(q) ?? false)
       );
     });
-  }, [query, cat, products, categories]);
+  }, [query, cat, sourceProducts, categoriesForFilter]);
+
+  const displayProducts = useMemo(() => {
+    const sorted = [...filtered];
+    switch (order) {
+      case "price-asc":
+        return sorted.sort((a, b) => (a.price ?? Number.POSITIVE_INFINITY) - (b.price ?? Number.POSITIVE_INFINITY));
+      case "price-desc":
+        return sorted.sort((a, b) => (b.price ?? Number.NEGATIVE_INFINITY) - (a.price ?? Number.NEGATIVE_INFINITY));
+      case "title-asc":
+        return sorted.sort((a, b) => a.title.localeCompare(b.title, "es", { sensitivity: "base" }));
+      case "title-desc":
+        return sorted.sort((a, b) => b.title.localeCompare(a.title, "es", { sensitivity: "base" }));
+      default:
+        return sorted;
+    }
+  }, [filtered, order]);
 
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 pb-20">
@@ -99,13 +120,28 @@ function Catalog() {
               </button>
             )}
           </label>
-          <div className="flex items-center gap-2 overflow-x-auto">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground shrink-0" />
-            <CategoryChips value={cat} onChange={setCat} />
+          <div className="flex flex-wrap items-center gap-3 justify-between">
+            <div className="flex items-center gap-2 overflow-x-auto">
+              <CategoryChips value={cat} onChange={setCat} />
+            </div>
+            <label className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+              Orden
+              <select
+                value={order}
+                onChange={(e) => setOrder(e.target.value as any)}
+                className="h-10 rounded-full bg-background border border-border px-3 text-sm outline-none transition focus:border-white/25 focus:ring-2 focus:ring-white/10"
+              >
+                <option value="none">Predeterminado</option>
+                <option value="price-desc">Mayor precio</option>
+                <option value="price-asc">Menor precio</option>
+                <option value="title-asc">A-Z</option>
+                <option value="title-desc">Z-A</option>
+              </select>
+            </label>
           </div>
         </div>
         <div className="mt-2 text-xs text-muted-foreground">
-          {isLoading ? "Cargando…" : `${filtered.length} resultado${filtered.length === 1 ? "" : "s"}`}
+          {isLoading ? "Cargando…" : `${displayProducts.length} producto${displayProducts.length === 1 ? "" : "s"}/servicio${displayProducts.length === 1 ? "" : "s"}`}
         </div>
       </div>
 
@@ -113,9 +149,9 @@ function Catalog() {
         <div className="mt-20 flex justify-center text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
         </div>
-      ) : filtered.length > 0 ? (
+      ) : displayProducts.length > 0 ? (
         <div key={query + (cat ?? "")} className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 stagger-children">
-          {filtered.map((p) => (
+          {displayProducts.map((p) => (
             <ProductCard key={p.id} product={p} highlight={query} />
           ))}
         </div>

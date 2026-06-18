@@ -1,6 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Navigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { ProductEdit } from "./_authenticated.admin.productos.$id";
 
 export const Route = createFileRoute("/_authenticated/admin/productos/nuevo")({
-  component: () => <Navigate to="/admin/productos/$id" params={{ id: "nuevo" }} replace />,
+  component: () => <ProductEdit createIdOverride="nuevo" />,
 });

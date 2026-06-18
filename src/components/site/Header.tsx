@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Search, Sparkles, ShieldCheck } from "lucide-react";
 
@@ -6,11 +6,11 @@ const nav = [
   { to: "/", label: "Inicio" },
   { to: "/catalogo", label: "Productos" },
   { to: "/categorias", label: "Categorías" },
-  { to: "/contacto", label: "Contacto" },
 ] as const;
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
@@ -30,8 +30,12 @@ export function Header() {
       ].join(" ")}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="relative h-8 w-8 rounded-lg bg-[var(--gradient-brand)] shadow-glow grid place-items-center">
+        <button
+          type="button"
+          onClick={() => navigate({ to: "/" })}
+          className="flex items-center gap-2 group"
+        >
+          <div className="relative h-8 w-8 rounded-lg bg-(--gradient-brand) shadow-glow grid place-items-center">
             <Sparkles className="h-4 w-4 text-white" />
             <div className="absolute inset-0 rounded-lg ring-1 ring-inset ring-white/20" />
           </div>
@@ -39,9 +43,9 @@ export function Header() {
             <span className="text-sm font-semibold tracking-tight">Revendedor</span>
             <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">digital</span>
           </div>
-        </Link>
+        </button>
 
-        <nav className="hidden md:flex items-center gap-1 ml-2">
+        <nav className="flex items-center gap-1 ml-2">
           {nav.map((item) => {
             const active =
               item.to === "/"
@@ -70,6 +74,7 @@ export function Header() {
         <div className="ml-auto flex items-center gap-2">
           <Link
             to="/catalogo"
+            search={{ q: undefined, cat: undefined }}
             className="hidden sm:flex items-center gap-2 h-9 px-3 rounded-full glass text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Search className="h-3.5 w-3.5" />

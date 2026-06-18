@@ -1,6 +1,8 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+
+const MASTER_PASSWORD_KEY = "admin_password_verified";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -10,12 +12,23 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedRoute() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading } = useKindeAuth();
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem(MASTER_PASSWORD_KEY) === "true";
+  });
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    if (typeof window === "undefined") return;
+
+    const storedUnlocked = sessionStorage.getItem(MASTER_PASSWORD_KEY) === "true";
+    if (storedUnlocked !== isUnlocked) {
+      setIsUnlocked(storedUnlocked);
+    }
+
+    if (!isLoading && !isAuthenticated && !storedUnlocked) {
       navigate({ to: "/auth", replace: true });
     }
-  }, [isAuthenticated, isLoading, navigate]);
+  }, [isAuthenticated, isLoading, isUnlocked, navigate]);
 
   if (isLoading) {
     return (
@@ -25,7 +38,7 @@ function AuthenticatedRoute() {
     );
   }
 
-  if (!isAuthenticated) return null;
+  if (!isAuthenticated && !isUnlocked) return null;
 
   return <Outlet />;
 }

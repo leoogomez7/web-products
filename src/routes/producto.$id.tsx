@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, ArrowUpRight, Check, MessageCircle, Share2, Loader2 } from "lucide-react";
-import { useCategories, useProduct, useProducts, useSiteSettings, buildWhatsappUrl } from "@/lib/catalog";
+import { sampleCategories, sampleProducts, useCategories, useProduct, useProducts, useSiteSettings, buildWhatsappUrl } from "@/lib/catalog";
 import { ProductCard } from "@/components/site/ProductCard";
 
 export const Route = createFileRoute("/producto/$id")({
@@ -30,6 +30,10 @@ function ProductDetail() {
   const { data: allProducts = [] } = useProducts();
   const { data: settings } = useSiteSettings();
 
+  const fallbackCategories = categories.length > 0 ? categories : sampleCategories;
+  const productToShow = product ?? sampleProducts.find((p) => p.id === id);
+  const relatedSource = allProducts.length > 0 ? allProducts : sampleProducts;
+
   if (isLoading) {
     return (
       <div className="py-40 flex justify-center text-muted-foreground">
@@ -37,16 +41,16 @@ function ProductDetail() {
       </div>
     );
   }
-  if (!product) throw notFound();
+  if (!productToShow) throw notFound();
 
-  const cat = categories.find((c) => c.id === product.categoryId);
-  const related = allProducts.filter((p) => p.id !== product.id && p.categoryId === product.categoryId).slice(0, 3);
-  const wa = buildWhatsappUrl(settings, product.title);
+  const cat = fallbackCategories.find((c) => c.id === productToShow.categoryId);
+  const related = relatedSource.filter((p) => p.id !== productToShow.id && p.categoryId === productToShow.categoryId).slice(0, 3);
+  const wa = buildWhatsappUrl(settings, productToShow.title);
 
   return (
     <article className="relative">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-[480px] -z-10 overflow-hidden">
-        <div className={`absolute inset-0 bg-gradient-to-br ${product.gradient} opacity-30 blur-3xl`} />
+      <div aria-hidden className="absolute inset-x-0 top-0 h-120 -z-10 overflow-hidden">
+        <div className={`absolute inset-0 bg-linear-to-br ${productToShow.gradient} opacity-30 blur-3xl`} />
         <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_0%,transparent_0%,#07070A_75%)]" />
       </div>
 
@@ -58,15 +62,15 @@ function ProductDetail() {
         <div className="mt-8 grid gap-10 lg:grid-cols-2 lg:items-start">
           <div className="lg:sticky lg:top-24 animate-scale-in">
             <div className="relative aspect-square overflow-hidden rounded-3xl glass shadow-card">
-              {product.imageUrl ? (
-                <img src={product.imageUrl} alt={product.title} className="absolute inset-0 h-full w-full object-cover" />
+              {productToShow.imageUrl ? (
+                <img src={productToShow.imageUrl} alt={productToShow.title} className="absolute inset-0 h-full w-full object-cover" />
               ) : (
                 <>
-                  <div className={`absolute inset-0 bg-gradient-to-br ${product.gradient}`} />
+                  <div className={`absolute inset-0 bg-linear-to-br ${productToShow.gradient}`} />
                   <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_20%_0%,rgba(255,255,255,0.35),transparent_55%)] mix-blend-overlay" />
                   <div className="absolute inset-0 grid place-items-center">
                     <span className="text-[140px] font-bold tracking-tight text-white/95 drop-shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
-                      {product.glyph}
+                      {productToShow.glyph}
                     </span>
                   </div>
                 </>
@@ -84,11 +88,11 @@ function ProductDetail() {
                 {cat.name}
               </Link>
             )}
-            <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-[-0.03em]">{product.title}</h1>
-            <p className="mt-4 text-base text-muted-foreground leading-relaxed">{product.longDescription}</p>
+            <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-[-0.03em]">{productToShow.title}</h1>
+            <p className="mt-4 text-base text-muted-foreground leading-relaxed">{productToShow.longDescription}</p>
 
             <div className="mt-8 grid grid-cols-2 gap-2">
-              {product.features.map((f: string) => (
+              {productToShow.features.map((f: string) => (
                 <div key={f} className="flex items-start gap-2 rounded-xl glass px-3 py-2.5 text-sm">
                   <Check className="h-4 w-4 mt-0.5 text-cyan shrink-0" />
                   <span>{f}</span>
@@ -110,7 +114,7 @@ function ProductDetail() {
               ) : (
                 <Link
                   to="/contacto"
-                  search={{ producto: product.title }}
+                  search={{ producto: productToShow.title }}
                   className="inline-flex items-center gap-2 h-12 px-6 rounded-full bg-white text-black text-sm font-medium hover:bg-white/90 transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-glow"
                 >
                   <MessageCircle className="h-4 w-4" />
@@ -121,7 +125,7 @@ function ProductDetail() {
                 onClick={async () => {
                   try {
                     if (navigator.share) {
-                      await navigator.share({ title: product.title, text: product.description, url: window.location.href });
+                      await navigator.share({ title: productToShow.title, text: productToShow.description, url: window.location.href });
                     } else {
                       await navigator.clipboard.writeText(window.location.href);
                     }
@@ -134,7 +138,7 @@ function ProductDetail() {
             </div>
 
             <div className="mt-8 text-xs text-muted-foreground">
-              Publicado el {new Date(product.createdAt).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" })}
+              Publicado el {new Date(productToShow.createdAt).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" })}
             </div>
           </div>
         </div>
